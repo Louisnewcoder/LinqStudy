@@ -37,8 +37,11 @@ L t M 提供了构造函数式创建方式。 通过声明 `XDocument` 类，将
 
 ***PS：XML文档必须有一个根元素，所以大多数情况下 `XDocument`的参数都已 `XElement` 开始(除XDeclaration) ***
 
+<<<<<<< HEAD
 ***PS：因为 `XDocument`和`XElement` 都继承自XContainer类，而且大多数XDocument的方法 `XElement`都实现了，所以创建一个xml文档并写入内容可以直接用`XElement`类封装数据，然后直接调用`Save()`方法也可以保存 ***
 
+=======
+>>>>>>> 7663c89da1d444b0e9461f9ce0064493f271b096
 
 ### 关于xml的Attribute
 XML Attribute 式XML文档的一个叶节点，可以从例子中看出，作为附属节点的`属性`也是以构造函数的方式创建的。
@@ -47,10 +50,13 @@ XML Attribute 式XML文档的一个叶节点，可以从例子中看出，作为
 ***PS：另外，大多数的构造函数都是以类似 `键值对` 的形式输入的***
 
 ## 关于使用L t M 加载和保存XML文档
+<<<<<<< HEAD
 `XDocument` 和 `XElement` 都继承自 `XContainer`类（它实现了一个可以包含其他xml节点的xml节点）。这两个类都实现了`Save()`和`Load()`方法，且调用方式一致。 另外`XElement`还支持`.Parse()`方法直接从字符串中读取XML数据。
 
 下面仅使用其中一种进行展示：
 
+=======
+>>>>>>> 7663c89da1d444b0e9461f9ce0064493f271b096
 ### 加载XML文档
 加载的时候要使用`XDocument`类的静态方法`.Load( <file Path>)`
 ```C#
@@ -59,6 +65,7 @@ XML Attribute 式XML文档的一个叶节点，可以从例子中看出，作为
   XDocument xDoc = XDocument.Load(Path.Combine(path, fileName)); 
      
 ```
+<<<<<<< HEAD
 
 ### 保存XML文档
 保存的时候需要使用 `XDocument`实例对象的实例方法 `.Save( <file Path>)`
@@ -131,4 +138,12 @@ XML Attribute 式XML文档的一个叶节点，可以从例子中看出，作为
     var price = xDoc.Descendants("Price").FirstOrDefault();
     price?.Attribute("Currency")?.Remove();
 ```
+=======
+>>>>>>> 7663c89da1d444b0e9461f9ce0064493f271b096
 
+### 保存XML文档
+保存的时候需要使用 `XDocument`实例对象的实例方法 `.Save( <file Path>)`
+```C#
+    // Save方法同样接收一个用于确认保存路径的 字符串参数
+     xDoc.Save(Path.Combine(path, fileName));    
+```
