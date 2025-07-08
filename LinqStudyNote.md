@@ -197,3 +197,41 @@ LINQ的方法语法就是为一切可支持LINQ查询的集合对象实现的与
 
      // names.Where(n => n.StartsWith("L") 这一行语句就是使用方法语法获得与查询语法相同的效果
 ```
+这里要理解的是，`.Where()` 会对 `names` 中的每个元素执行作为参数传入的lambda表达式方法；
+同时C#编译器会推断数据源（在这里也就是names）的类型，并且告诉`Where()`把什么类型作为元素的输入类型；
+
+## LINQ 对查询结果进行排序
+只需要一行 `orderby  <condition>` 子句就可以实现排序。下面是基于查询语法进行演示
+```C#
+    List<Person> people = new List<Person>() {
+    new Person("Jessica",29),
+    new Person("Louis",5),
+    new Person("Vicky",17),
+    new Person("Lucy",41),
+    new Person("Lily",22),
+    new Person("Simon",37),
+    new Person("Steward",50),
+    new Person("Penny",71),
+    new Person("Howard",16),
+    new Person("Laurent",9),
+    new Person("Lewis",33),
+    new Person("Babara",10),
+    new Person("Jake",51),
+    new Person("Jack",18),
+    new Person("Glory",25),
+    new Person("Smith",44)
+    };
+
+    var queryResult = from p in people
+                      where p.Name.StartsWith("L")
+                      orderby p.Age descending
+                      select p;
+
+    foreach (var person in queryResult)
+    {
+        Console.WriteLine("I find {0}, who is {1} yrd ", person.Name, person.Age);
+
+    }
+```
+
+默认情况 `orderby` 子句是升序排列的，如果希望降序则加入 `descending` 关键字
