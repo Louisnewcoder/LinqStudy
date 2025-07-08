@@ -143,3 +143,57 @@ XML Attribute 式XML文档的一个叶节点，可以从例子中看出，作为
     // Save方法同样接收一个用于确认保存路径的 字符串参数
      xDoc.Save(Path.Combine(path, fileName));    
 ```
+
+## LINQ 查询语法
+***这是一种类似 SQL 语句的语法***
+先看示例：
+```C#
+string[] names = { "James", "Louis", "Jessica", "Laurrence", "Lucy",
+    "Howard", "Tequila", "Daisy", "Funky", "Song Li" };
+
+var quereyResult = from n in names where n.StartsWith("J") select n;
+
+foreach (var n in quereyResult)
+{
+    Console.WriteLine(n);
+}
+```
+在上述例子中展示了如何使用LINQ在一个类型集合中找到符合条件的目标。其中:
+
+1. ` from n in names` 类似 `foreach` 循环的条件是声明语句，在这里代表：
+***声明一个一个循环变量 n ，用于代表names中的每一个元素***；
+2. `where` 是条件是一个条件语句，用于筛选出符合条件的元素。这里的条件是所有开头为`J`的string元素；
+3. `select` 是确认选择语句，将所有符合条件的元素收集起来；
+4. 如果将鼠标放在 `where` 关键字上，可以看到这个条件和删选的结果返回一个 `IEnumerable<T>`的类型变量；
+
+### 关于 var 关键字的使用实践
+`var` 关键字是被广泛推荐作为LINQ结果的变量是声明,没什么特别的就是方便，因为很多时候你不知道你查询的泛型类型是什么，但是它一定是`IEnumerable<T>`的可迭代集合。这样就可以让编辑器自己推断。
+
+### 关于 from 与 “数据源”
+`from` 关键字用于指定要查询的数据源，这个数据源必须是数组或者可枚举(迭代的)集合。***这要求数据源必须支持 `IEnumerable<T>` 接口***
+
+### 关于 where 子句
+`where` 字句是可选的，只不过大多数的时候都会要求一些筛选条件。where子句被称为LINQ中的限制运算符，它限制了查询结果。
+
+### 关于 select 子句
+`select` 子句是必须的*因为必须指定结果中有哪些元素*
+
+### 关于“延迟执行查询的概念”
+虽然在一开始写了LINQ的查询语句并且将查询结果存入了一个名为`queryResult`的变量，但实际上代码运行到这里并没有产生查询结果。这里实际上是存储了一个 ***查询计划*** 。
+直到`foreach` 遍历`queryResult`变量的时候，才真正执行LINQ查询，并返回结果交给`foreach`遍历。 
+
+***PS： LINQ查询语法 是由C#编译器进行将其转换为 LINQ方法语法并执行的。 在使用LINQ时，官方推荐有限使用查询语法，当查询语法不合适时再使用方法语法。***
+
+## LINQ 方法语法
+LINQ的方法语法就是为一切可支持LINQ查询的集合对象实现的与传统C#方法一样的扩展方法。
+在集合后使用 `.` 方法调用符就可以调用。
+但是如果没有引用 `System.Linq` 命名空间就无法调用或者查询这些方法的intelliSense.
+
+```C#
+  foreach(var n in   names.Where(n => n.StartsWith("L")))
+     {
+         Console.WriteLine(n);
+     }
+
+     // names.Where(n => n.StartsWith("L") 这一行语句就是使用方法语法获得与查询语法相同的效果
+```
