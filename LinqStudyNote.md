@@ -184,6 +184,52 @@ foreach (var n in quereyResult)
 
 ***PS： LINQ查询语法 是由C#编译器进行将其转换为 LINQ方法语法并执行的。 在使用LINQ时，官方推荐有限使用查询语法，当查询语法不合适时再使用方法语法。***
 
+#### 哪些操作会导致强制执行
+1. 转换方法（返回集合或具体类型）
+这些方法会立即执行查询并返回一个新的集合或数据结构：
+
+方法	            返回类型	                                说明
+.ToList()	        List<T>	                               将查询结果转换为 List<T>
+.ToArray()	        T[]	                                   将查询结果转换为数组
+.ToDictionary()	    Dictionary<TKey, TValue>	           将查询结果转换为字典
+.ToLookup()	        ILookup<TKey, TElement>                创建分组查找结构
+.ToHashSet()	    HashSet<T>	                           将查询结果转换为 HashSet<T>
+.AsEnumerable()	I   Enumerable<T>	                       强制转换为 IEnumerable<T>（不立即执行，但某些情况下可能影响后续查询）
+
+2. 聚合计算（返回单个值）
+这些方法会立即计算并返回一个标量值：
+
+方法	                        返回类型	        说明
+.Count()	                     int	        返回元素数量
+.LongCount()	                 long	        返回大整数计数值
+.Any()	                         bool	        检查是否有元素满足条件
+.All()	                         bool	        检查是否所有元素满足条件
+.First() / .FirstOrDefault()	 T	            返回第一个元素（或默认值）
+.Last() / .LastOrDefault()	     T	            返回最后一个元素（或默认值）
+.Single() / .SingleOrDefault()	 T	            返回唯一元素（或默认值，否则抛异常）
+.Min() / .Max()	                 T 或数值	     返回最小/最大值
+.Sum()	                         数值	        求和
+.Average()	                     数值	        求平均值
+.Aggregate()	                 T	            自定义聚合计算
+
+3. 元素获取（强制遍历）
+这些方法会立即执行查询以获取特定元素：
+
+方法	                                返回类型	        说明
+.ElementAt() / .ElementAtOrDefault()	   T	        获取指定索引位置的元素
+.Contains()	                               bool	        检查是否包含某个元素
+
+4. 序列比较
+方法	            返回类型	    说明
+.SequenceEqual()	 bool	    比较两个序列是否完全相同
+
+5. 强制求值（非标准 LINQ，但会影响执行）
+方法	                                 说明
+.GetEnumerator() + 遍历	            直接遍历会触发查询执行
+foreach 循环	                    隐式调用 GetEnumerator()
+.ToString()（某些 LINQ 提供程序）	 可能强制求值（如 Entity Framework 的查询日志）
+
+
 ## LINQ 方法语法
 LINQ的方法语法就是为一切可支持LINQ查询的集合对象实现的与传统C#方法一样的扩展方法。
 在集合后使用 `.` 方法调用符就可以调用。
@@ -235,3 +281,79 @@ LINQ的方法语法就是为一切可支持LINQ查询的集合对象实现的与
 ```
 
 默认情况 `orderby` 子句是升序排列的，如果希望降序则加入 `descending` 关键字
+上述代码的方法语法查询实现:
+```C#
+ var queryResult = people.Where(n => n.Name.StartsWith("J")).OrderBy(n => n.Age);
+```
+
+### 调用LINQ的聚合运算方法/运算符
+LINQ像SQL一样提供了一些用于聚合运算的方法。者可以方便开发者在获取筛选后的数据后不必再做额外的开发操作去处理筛选结果。
+
+***需要注意的是： 根据删选结果的不同可能 `查询结果`的集合内并不存在数据，这时调用`聚合运算符`会出现异常导致程序异常***
+
+使用方法很简单，直接在查询结果上调用对应的聚合运算方法即可。另外，下列例子中如果把筛选条件改成`n<500`就很可能出现查询结果为空的情况，因为并没产生出这样的数据。然后在使用聚合运算符时没有提前验证或者try..catch保护就会导致程序异常。
+
+```C#
+            var queryResult = from n in GetLotsOfNumbers(1_000_000) where n%2==0 select n;
+
+            foreach (var item in queryResult)
+            {
+                Console.WriteLine(item);
+            }
+
+            Console.WriteLine("The count of result is: " + queryResult.Count());
+            Console.WriteLine("The Average of result is: " + queryResult.Average());
+            Console.WriteLine("The MaxNumber of result is: " + queryResult.Max());
+            Console.WriteLine("The MinNumber of result is: " + queryResult.Min());
+            Console.WriteLine("The count of result is: " + queryResult.Sum(n=>(long)n));
+
+        static int[] GetLotsOfNumbers(int size)
+        {
+            int[] numbers = new int[size];
+
+            Random r = new Random(1024);
+            for (int i = 0; i < numbers.Length; i++)
+            {
+                numbers[i] = r.Next();
+
+            }
+            return numbers;
+        }
+```
+
+另外在实际操作的时候还要注意`数据溢出`的问题。比如上例中，获取的都是`int`类型，但是可能最后`Sum()`运算符给出的结果非常大超出int类型的存储范围，所以选择了`Sum()`的可传递lambda参数的重载，将数值转换为`long`类型。
+
+***PS: 每个聚合运算符都有可自定义运算条件的重载方法。 同时LINQ也提供了完全可自定义的聚合运算符***
+
+### 单值选择查询/去重查询
+这种查询是用于查询数据中的唯一值。也就是说结果是不重复的值或值的集合。比如一个学校的学生来自五湖四海，现在想知道一共来自那些地方，而不是有多少个人来自同一个地方，那么就可以用这种单值查询。
+使用方式也很简单，只需要在查询语句的最后调用`.Distinct()`方法。
+
+```C#
+   List<Person> people = new List<Person>() {
+   new Person("Asia"),
+   new Person("America"),
+   new Person("Africa"),
+   new Person("Europe"),
+   new Person("South America"),
+   new Person("Asia"),
+   new Person("Asia"),
+   new Person("Asia"),
+   new Person("Europe"),
+   new Person("Europe"),
+   new Person("Europe"),
+   new Person("Europe"),
+   new Person("South America"),
+   new Person("South America"),
+   new Person("South America"),
+   new Person("South America")
+   };
+
+    // 将查询语句用()包裹起来，然后在()外调用 .Distinct()
+   var queryResult = (from p in people
+                     select p.Region).Distinct();
+```
+或者使用方法语法查询
+```C#
+  var queryResult = people.Select(p=>p.Region).Distinct();
+```
