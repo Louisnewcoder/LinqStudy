@@ -331,22 +331,22 @@ LINQ像SQL一样提供了一些用于聚合运算的方法。者可以方便开�
 
 ```C#
    List<Person> people = new List<Person>() {
-   new Person("Asia"),
-   new Person("America"),
-   new Person("Africa"),
-   new Person("Europe"),
-   new Person("South America"),
-   new Person("Asia"),
-   new Person("Asia"),
-   new Person("Asia"),
-   new Person("Europe"),
-   new Person("Europe"),
-   new Person("Europe"),
-   new Person("Europe"),
-   new Person("South America"),
-   new Person("South America"),
-   new Person("South America"),
-   new Person("South America")
+   new Person("Jeccica",19,"Asia"),
+   new Person("Bright",57,"America"),
+   new Person("Lucy",77,"Africa"),
+   new Person("Trupt",7,"Europe"),
+   new Person("Terry",13,"South America"),
+   new Person("Lily",20,"Asia"),
+   new Person("Micheal",16,"Asia"),
+   new Person("Steward",49,"Asia"),
+   new Person("Jame",25,"Europe"),
+   new Person("Kiki",5,"Europe"),
+   new Person("Labubu",33,"Europe"),
+   new Person("Omiga",14,"Europe"),
+   new Person("Bruck",25,"South America"),
+   new Person("Baby",3,"South America"),
+   new Person("Smith",50,"South America"),
+   new Person("Sebastian",30,"South America")
    };
 
     // 将查询语句用()包裹起来，然后在()外调用 .Distinct()
@@ -356,4 +356,41 @@ LINQ像SQL一样提供了一些用于聚合运算的方法。者可以方便开�
 或者使用方法语法查询
 ```C#
   var queryResult = people.Select(p=>p.Region).Distinct();
+```
+
+### 多级排序
+当需要将数据根据条件进行排序整理的时候通过 `orderby` 子句进行处理。之前的例子是只用了一个条件，并通过添加降序关键字来控制升降序。下面展示如何通过多个条件以及升降序关键字进行控制。
+```C#
+    List<Person> people = new List<Person>() {
+       new Person("Jeccica",19,"Asia"),
+       new Person("Bright",57,"America"),
+       new Person("Lucy",77,"Africa"),
+       new Person("Trupt",7,"Europe"),
+       new Person("Terry",13,"South America"),
+       new Person("Lily",20,"Asia"),
+       new Person("Micheal",16,"Asia"),
+       new Person("Steward",49,"Asia"),
+       new Person("Jame",25,"Europe"),
+       new Person("Kiki",5,"Europe"),
+       new Person("Labubu",33,"Europe"),
+       new Person("Omiga",14,"Europe"),
+       new Person("Bruck",25,"South America"),
+       new Person("Baby",3,"South America"),
+       new Person("Smith",50,"South America"),
+       new Person("Sebastian",30,"South America")
+    };
+
+    var queryResult = from p in people
+                      orderby p.Region, p.Age descending, p.Name
+                      select p;
+  foreach (var person in queryResult)
+    {
+         Console.WriteLine($"{person.Name} is from {person.Region} and {person.Age} year{(person.Age>1?"s":"")} old ");
+    }
+```
+如上面这段代码所展示，只需要将自己需要的排序顺序一次键入，并使用 `,` 分隔即可。这个例子得到的输出是先按*Region 升序*排列，然后按*Age 降序*，最后再按*名字 升序* 排列。
+
+***使用语法方法的时候，每一个排序等级按顺序使用 `ThenBy()` or `ThenByDescending()`进行Chain Method***
+```C#
+var queryResult = people.OrderBy(p => p.Region).ThenByDescending(p => p.Age).ThenBy(p => p.Name);
 ```
