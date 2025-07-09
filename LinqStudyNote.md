@@ -167,10 +167,10 @@ foreach (var n in quereyResult)
 4. 如果将鼠标放在 `where` 关键字上，可以看到这个条件和删选的结果返回一个 `IEnumerable<T>`的类型变量；
 
 ### 关于 var 关键字的使用实践
-`var` 关键字是被广泛推荐作为LINQ结果的变量是声明,没什么特别的就是方便，因为很多时候你不知道你查询的泛型类型是什么，但是它一定是`IEnumerable<T>`的可迭代集合。这样就可以让编辑器自己推断。
+`var` 关键字是被广泛推荐作为LINQ结果的变量是声明,没什么特别的就是方便，因为很多时候你不知道你查询的泛型类型是什么，但是它一定是`IEnumerable<T>`的可遍历集合。这样就可以让编辑器自己推断。
 
 ### 关于 from 与 “数据源”
-`from` 关键字用于指定要查询的数据源，这个数据源必须是数组或者可枚举(迭代的)集合。***这要求数据源必须支持 `IEnumerable<T>` 接口***
+`from` 关键字用于指定要查询的数据源，这个数据源必须是数组或者可枚举(遍历的)集合。***这要求数据源必须支持 `IEnumerable<T>` 接口***
 
 ### 关于 where 子句
 `where` 字句是可选的，只不过大多数的时候都会要求一些筛选条件。where子句被称为LINQ中的限制运算符，它限制了查询结果。
@@ -393,4 +393,111 @@ LINQ像SQL一样提供了一些用于聚合运算的方法。者可以方便开�
 ***使用语法方法的时候，每一个排序等级按顺序使用 `ThenBy()` or `ThenByDescending()`进行Chain Method***
 ```C#
 var queryResult = people.OrderBy(p => p.Region).ThenByDescending(p => p.Age).ThenBy(p => p.Name);
+```
+
+### 分组查询GroupBy
+可以使用 `group by` 子句将数据根据条件进行分组。下面的代码例子基于前面的`Person`集合将所有数据基于`Region`进行分组。
+```C#
+            var groupedData = from p in people
+                              group p by p.Region;
+
+            foreach (var groupedPeople in groupedData)
+            {
+                Console.WriteLine("this is region - " + groupedPeople.Key + " - it has :");
+                foreach (var person in groupedPeople)
+                {
+                    Console.WriteLine(person.Name);
+                }
+            }
+```
+在这里要注意的是，`group`子句返回的是一个`IGrouping`的可遍历集合。这个集合由一个`Key`和*对应的一组与之关联可可遍历数据集合*组成。被分组的数据共享同一个与之关联的分组标签 -- `Key`。
+
+上述的例子中，基于`Region`分了组，每个组中都有对应这个`Region`的成员。
+
+#### 对分组数据的操作
+更多的时候开发这希望分了组并进行额外的操作。这通常会将被分好组的数据投射到一个单独的集合中，为了方便后续的选取或者聚合操作等。
+这需要使用 `into` 关键字。
+
+```C#
+            var queryResultByGroup = from p in people
+                                     group p by p.Region into pr
+                                     select new { Region = pr.Key, TotalAge = pr.Sum(p => p.Age) };
+            var queryFromGrouped = from p in queryResultByGroup
+                                   orderby p.Region
+                                   select p;
+
+            Console.WriteLine("Region\t\tTotalAge");
+            Console.WriteLine("------------------------------");
+            foreach (var p in queryFromGrouped)
+            {
+                Console.WriteLine($"{p.Region}\t\t{p.TotalAge}");
+            }
+```
+在这段代码中 `group by` 子句加入了`into <Collection Name>`关键字。这将每一个分组单独成为了一个集合。并在后续的最终数据筛选中 -- `Select`子句 -- 围绕着这个集合进行操作。
+
+这段代码的第一部分，先将数据分组，然后通过`Select` 子句直接生成新的可迭代的*匿名变量*集合。 然后在第二部分中，用常规查询操作进行处理。
+
+***要注意的是： 在`Select`子句“选取数据”的代码行，直接对每个新生成的集合进行了聚合操作 `Sum()` 而不是单独拿出来进行处理。这就是用`into` 关键字投射一个新的集合的语法好处。***
+
+因为`into`关键字是查询语法的内容，方法语法中不存在，所以方法语法直接通过`Select`子句的lambda表达式处理。
+```C#
+   var queryResultByGroup = people.GroupBy(p => p.Region).Select(
+                   g=> new {Region = g.Key,TotalAge=g.Sum(p => p.Age) }
+           );
+```
+### Join查询
+`Join`查询可以将两组数据结合起来，根据`join`查询条件选取两组数据相关联的部分(交集)。
+这个操作就是实现类似数据库关联操作的效果。通常用一个 *主键* 作为`join`查询条件。
+
+```C#
+List<Person> people = new List<Person>() {
+   new Person("Jeccica",19,"Asia",1),
+   new Person("Bright",57,"America",2),
+   new Person("Lucy",77,"Africa",3),
+   new Person("Trupt",7,"Europe",4),
+   new Person("Terry",13,"South America",5),
+   new Person("Lily",20,"Asia",6),
+   new Person("Micheal",16,"Asia",7),
+   new Person("Steward",49,"Asia",8),
+   new Person("Jame",25,"Europe",9),
+   new Person("Kiki",5,"Europe",10),
+   new Person("Labubu",33,"Europe",11),
+   new Person("Omiga",14,"Europe",12),
+   new Person("Bruck",25,"South America",13),
+   new Person("Baby",3,"South America",14),
+   new Person("Smith",50,"South America",15),
+   new Person("Sebastian",30,"South America",16)
+};
+
+List<PersonDetail> personDetails = new List<PersonDetail>() { 
+    new PersonDetail(4,Gender.male),
+    new PersonDetail(7,Gender.male),
+    new PersonDetail(15,Gender.female),
+    new PersonDetail(1,Gender.female),
+    new PersonDetail(6,Gender.female),
+    new PersonDetail(11,Gender.male),
+    new PersonDetail(13,Gender.male),
+};
+
+ var queryForJoin = from p in people
+                    join d in personDetails on p.ID equals d.ID
+                    select new { p.ID, p.Name, d.Gender };
+
+ foreach (var info in queryForJoin)
+ {
+     Console.WriteLine($"ID : {info.ID} - Name : {info.Name} - Gender : {info.Gender}");
+ }
+```
+可以从上面的代码看出来，两组数据都有一个关联项 `ID`；
+然后在查询语句中，`join d in personDetails` 是声明将那组数据的元素作为关联查询内容； 由`on .. equals`引导的查询语句明确了使用`ID`执行关联查询；
+最终，两组数据ID相同的数据条目将被抽选出来形成集合返回。
+
+对应的方法语法如下
+```C#
+ var queryForJoin = people.Join(
+    personDetails, 
+ p => p.ID, 
+ d => d.ID,
+ (p, d) => (p.ID, p.Name, d.Gender)
+ );
 ```
